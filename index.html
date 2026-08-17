@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#537a63">
+<title>Easy Fuel</title>
+<style>
+:root{--bg:#f7f7f4;--card:#fff;--text:#24302a;--muted:#68736c;--accent:#537a63;--soft:#e2eee3;--line:#e1e6e1;--danger:#a84f4f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:30px 18px;background:linear-gradient(135deg,#dfeade,#f5eee3);text-align:center}header h1{font-size:40px;margin:0 0 6px}header p{max-width:700px;margin:auto;color:var(--muted)}
+main{max-width:1100px;margin:auto;padding:18px}.topbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+button{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:12px;padding:10px 13px;font-weight:700;cursor:pointer}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}button.danger{color:var(--danger)}
+.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:18px}.tabs button.active{background:var(--accent);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:17px;margin-bottom:15px;box-shadow:0 7px 22px rgba(30,45,35,.06)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:14px}.grid .card{margin:0}
+h2{margin-top:5px}.tag{display:inline-block;padding:5px 9px;border-radius:999px;background:var(--soft);font-size:12px;font-weight:800;margin:2px}
+.day{border-left:4px solid var(--accent)}.nutrition{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0}.nutrition div{background:#f4f7f4;border-radius:10px;text-align:center;padding:8px}.nutrition b{display:block}.nutrition span{font-size:11px;color:var(--muted)}
+.small{font-size:13px;color:var(--muted);line-height:1.5}.actions{display:flex;gap:7px;flex-wrap:wrap}.hidden{display:none}.notice{background:#eef4ed;border:1px solid #d8e5d8;padding:12px;border-radius:13px}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text)}label{display:block;font-weight:700;font-size:13px;margin:10px 0}textarea{min-height:80px}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.check{display:flex;align-items:center;gap:8px;font-weight:500}.check input{width:auto}
+table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}th{background:#eef3ed}
+.week-title{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+footer{text-align:center;padding:25px;color:var(--muted);font-size:12px}
+@media(max-width:520px){header h1{font-size:32px}.nutrition{grid-template-columns:repeat(2,1fr)}main{padding:12px}}
+</style>
+</head>
+<body>
+<header><h1>Easy Fuel 🥗</h1><p>Simple, protein- and fiber-rich meals to help fuel running, gym sessions, recovery, and everyday life.</p></header>
+<main>
+<div class="topbar">
+<button class="primary" onclick="newWeek()">＋ New Rotation</button>
+<button onclick="exportData()">Export My Meal Plans</button>
+<button onclick="document.getElementById('importFile').click()">Import Plans</button>
+<input id="importFile" type="file" accept=".json" hidden onchange="importData(event)">
+</div>
+<div class="tabs" id="weekTabs"></div>
+
+<section id="planner"></section>
+<section id="library" class="hidden"></section>
+<section id="groceries" class="hidden"></section>
+</main>
+<footer>Your plans are saved in this browser on this device. Nutrition numbers are estimates and portions can be adjusted based on hunger, training, and guidance from a parent/guardian or qualified professional.</footer>
+
+<script>
+const starterWeeks=[
+{name:"Week 1 — Easy Favorites", meals:[
+{name:"Berry PB Overnight Oats",type:"Breakfast",fuel:["Breakfast","Pre-workout","Post-workout"],p:"24g",f:"9g",c:"50g",fat:"13g",ings:["oats|0.5 cup|Harris Teeter","Greek yogurt|0.75 cup|Harris Teeter","milk|0.5 cup|Harris Teeter","peanut butter|1 tbsp|Publix","berries|0.5 cup|Publix","chia seeds|1 tsp|Publix"],prep:"Mix oats, yogurt, milk, peanut butter and chia. Refrigerate overnight; add berries before eating."},
+{name:"Egg & Cheese Wrap",type:"Breakfast",fuel:["Breakfast","Pre-workout"],p:"23g",f:"5g",c:"30g",fat:"17g",ings:["eggs|2|Publix","whole-wheat tortillas|1|Harris Teeter","shredded cheese|0.25 cup|Harris Teeter","spinach|0.25 cup|Publix","salsa|2 tbsp|Publix"],prep:"Scramble eggs with spinach, add cheese, roll in tortilla, and refrigerate for weekday breakfasts."},
+{name:"Greek Yogurt Berry Bowl",type:"Breakfast",fuel:["Breakfast","Post-workout"],p:"27g",f:"10g",c:"40g",fat:"13g",ings:["Greek yogurt|1 cup|Harris Teeter","berries|0.5 cup|Publix","oats|0.25 cup|Harris Teeter","peanut butter|1 tbsp|Publix","chia seeds|1 tbsp|Publix"],prep:"Portion yogurt into containers. Pack toppings separately if you want crunch."},
+{name:"Chicken Rice Power Bowl",type:"Lunch",fuel:["Lunch","Post-workout"],p:"38g",f:"6g",c:"52g",fat:"10g",ings:["chicken breast|4 oz|Publix","rice|0.75 cup cooked|Publix","broccoli|0.5 cup|Publix","carrots|0.5 cup|Publix","Greek-yogurt ranch|1 tbsp|Harris Teeter"],prep:"Cook chicken and rice on Sunday. Portion with vegetables into five containers; add sauce after reheating."},
+{name:"Turkey & Cheese Wrap",type:"Lunch",fuel:["Lunch","Pre-workout","Post-workout"],p:"32g",f:"6g",c:"34g",fat:"11g",ings:["deli turkey|4 oz|Harris Teeter","whole-wheat tortillas|1|Harris Teeter","cheese|1 slice|Harris Teeter","lettuce|1 handful|Publix","tomato|0.5|Publix","Greek-yogurt ranch|1 tbsp|Harris Teeter"],prep:"Assemble, wrap tightly, and refrigerate. Add an easy fruit on the side."},
+{name:"Chicken Taco Bowl",type:"Dinner",fuel:["Dinner","Post-workout"],p:"40g",f:"11g",c:"62g",fat:"12g",ings:["chicken breast|4 oz|Publix","rice|0.75 cup cooked|Publix","black beans|0.5 cup|Publix","corn|0.25 cup|Publix","salsa|2 tbsp|Publix","shredded cheese|2 tbsp|Harris Teeter"],prep:"Season and cook chicken. Warm beans and corn, then layer over rice with salsa and cheese."},
+{name:"Turkey Meatball Spaghetti",type:"Dinner",fuel:["Dinner","Post-workout"],p:"34g",f:"9g",c:"55g",fat:"14g",ings:["turkey meatballs|4-5|Harris Teeter","whole-wheat spaghetti|1 cup cooked|Harris Teeter","marinara|0.5 cup|Harris Teeter","broccoli|0.5 cup|Publix","parmesan|1 tbsp|Harris Teeter"],prep:"Boil pasta, heat meatballs and marinara, steam broccoli, and combine."},
+{name:"Chicken Alfredo Broccoli Pasta",type:"Dinner",fuel:["Dinner","Post-workout"],p:"39g",f:"6g",c:"48g",fat:"13g",ings:["chicken breast|4 oz|Publix","pasta|1 cup cooked|Harris Teeter","broccoli|0.5 cup|Publix","light Alfredo|0.25 cup|Harris Teeter","parmesan|1 tbsp|Harris Teeter"],prep:"Cook pasta and broccoli. Heat chicken and sauce, then toss together."},
+{name:"Cheesy Chicken Quesadilla",type:"Dinner",fuel:["Dinner","Post-workout"],p:"40g",f:"9g",c:"43g",fat:"16g",ings:["chicken breast|4 oz|Publix","small tortillas|2|Harris Teeter","shredded cheese|0.33 cup|Harris Teeter","black beans|0.25 cup|Publix","salsa|2 tbsp|Publix"],prep:"Fill tortillas, fold, toast 2–3 minutes per side, and serve with salsa."},
+{name:"Honey Garlic Chicken & Sweet Potato",type:"Dinner",fuel:["Dinner","Post-workout"],p:"35g",f:"8g",c:"43g",fat:"12g",ings:["chicken breast|4 oz|Publix","sweet potato|1 medium|Publix","green beans|0.5 cup|Publix","honey|1 tsp|Publix","olive oil|1 tsp|Publix","garlic|1 clove|Publix"],prep:"Microwave sweet potato until soft. Cook chicken with garlic and honey; serve with green beans."},
+{name:"Burger Bowl",type:"Dinner",fuel:["Dinner","Post-workout"],p:"35g",f:"6g",c:"45g",fat:"15g",ings:["lean ground turkey|4 oz|Harris Teeter","potato|1 medium|Publix","lettuce|1 handful|Publix","tomato|0.5|Publix","cheese|1 slice|Harris Teeter","pickles|2 tbsp|Publix"],prep:"Roast or air-fry cubed potato. Brown turkey, add cheese, and build a bowl."},
+{name:"Easy Chicken Rice Soup",type:"Dinner",fuel:["Dinner","Post-workout"],p:"35g",f:"7g",c:"42g",fat:"8g",ings:["chicken breast|4 oz|Publix","rice|0.75 cup cooked|Publix","chicken broth|1 cup|Harris Teeter","carrots|0.5 cup|Publix","celery|0.5 cup|Publix","peas|0.25 cup|Publix"],prep:"Simmer broth, carrots and celery. Add cooked chicken, rice and peas and heat through."}
+]},
+{name:"Week 2 — Mix It Up", meals:[
+{name:"Banana Cinnamon Protein Oats",type:"Breakfast",fuel:["Breakfast","Pre-workout"],p:"23g",f:"8g",c:"58g",fat:"11g",ings:["oats|0.5 cup|Harris Teeter","milk|0.75 cup|Harris Teeter","Greek yogurt|0.5 cup|Harris Teeter","banana|1|Publix","peanut butter|1 tbsp|Publix","cinnamon|1 tsp|Publix"],prep:"Cook oats with milk and banana; stir in yogurt after cooking and top with peanut butter."},
+{name:"Breakfast Egg Bagel",type:"Breakfast",fuel:["Breakfast","Post-workout"],p:"25g",f:"5g",c:"48g",fat:"14g",ings:["eggs|2|Publix","mini whole-grain bagel|1|Harris Teeter","cheese|1 slice|Harris Teeter","fruit|1 serving|Publix"],prep:"Scramble eggs, add cheese, and place on toasted bagel. Add fruit."},
+{name:"Chicken Caesar Wrap",type:"Lunch",fuel:["Lunch","Post-workout"],p:"36g",f:"6g",c:"38g",fat:"14g",ings:["chicken breast|4 oz|Publix","whole-wheat tortilla|1|Harris Teeter","romaine|1 cup|Publix","light Caesar dressing|1 tbsp|Harris Teeter","parmesan|1 tbsp|Harris Teeter"],prep:"Prep chicken Sunday and assemble wraps the night before for best texture."},
+{name:"Turkey Pasta Salad",type:"Lunch",fuel:["Lunch","Post-workout"],p:"30g",f:"7g",c:"45g",fat:"12g",ings:["whole-wheat pasta|1 cup cooked|Harris Teeter","deli turkey|3 oz|Harris Teeter","cucumber|0.5|Publix","tomato|0.5|Publix","Italian dressing|1 tbsp|Publix"],prep:"Cook pasta, cool completely, then mix with turkey and vegetables."},
+{name:"Chicken Teriyaki Rice Bowl",type:"Dinner",fuel:["Dinner","Post-workout"],p:"38g",f:"7g",c:"60g",fat:"9g",ings:["chicken breast|4 oz|Publix","rice|0.75 cup cooked|Publix","broccoli|0.75 cup|Publix","teriyaki sauce|1 tbsp|Harris Teeter","carrots|0.25 cup|Publix"],prep:"Cook chicken, steam vegetables, and serve over rice with teriyaki sauce."},
+{name:"Turkey Taco Pasta",type:"Dinner",fuel:["Dinner","Post-workout"],p:"35g",f:"9g",c:"55g",fat:"13g",ings:["lean ground turkey|4 oz|Harris Teeter","whole-wheat pasta|1 cup cooked|Harris Teeter","black beans|0.25 cup|Publix","salsa|0.25 cup|Publix","cheese|2 tbsp|Harris Teeter"],prep:"Brown turkey with taco seasoning, stir in salsa and beans, then toss with pasta and cheese."},
+{name:"Chicken Pita Plate",type:"Dinner",fuel:["Dinner","Post-workout"],p:"39g",f:"8g",c:"50g",fat:"12g",ings:["chicken breast|4 oz|Publix","whole-wheat pita|1|Harris Teeter","cucumber|0.5|Publix","tomato|0.5|Publix","Greek yogurt|0.25 cup|Harris Teeter","fruit|1 serving|Publix"],prep:"Cook seasoned chicken and serve with pita, chopped vegetables, yogurt dip and fruit."},
+{name:"Cheesy Turkey Rice Skillet",type:"Dinner",fuel:["Dinner","Post-workout"],p:"36g",f:"8g",c:"51g",fat:"14g",ings:["lean ground turkey|4 oz|Harris Teeter","rice|0.75 cup cooked|Publix","corn|0.25 cup|Publix","shredded cheese|0.25 cup|Harris Teeter","salsa|2 tbsp|Publix"],prep:"Brown turkey, stir in rice, corn and salsa, then top with cheese until melted."},
+{name:"Chicken Parmesan Pasta",type:"Dinner",fuel:["Dinner","Post-workout"],p:"39g",f:"7g",c:"55g",fat:"14g",ings:["chicken breast|4 oz|Publix","whole-wheat pasta|1 cup cooked|Harris Teeter","marinara|0.5 cup|Harris Teeter","mozzarella|0.25 cup|Harris Teeter","broccoli|0.5 cup|Publix"],prep:"Cook chicken, pasta and broccoli. Top chicken with marinara and mozzarella; serve with pasta."},
+{name:"Breakfast-for-Dinner Scramble",type:"Dinner",fuel:["Dinner","Post-workout"],p:"32g",f:"8g",c:"46g",fat:"17g",ings:["eggs|2|Publix","turkey sausage|2 oz|Harris Teeter","potato|1 medium|Publix","cheese|2 tbsp|Harris Teeter","fruit|1 serving|Publix"],prep:"Cook diced potato and sausage, add eggs and cheese, and serve with fruit."}
+]}];
+
+let state=JSON.parse(localStorage.getItem("easyFuelV2")||"null")||{weeks:starterWeeks,active:0};
+function save(){localStorage.setItem("easyFuelV2",JSON.stringify(state))}
+function fuelBadge(x){return `<span class="tag">${x}</span>`}
+function tabs(){document.getElementById("weekTabs").innerHTML=state.weeks.map((w,i)=>`<button class="${i===state.active?'active':''}" onclick="selectWeek(${i})">${w.name}</button>`).join("")}
+function mealCard(m,i){
+return `<div class="card"><div>${m.fuel.map(fuelBadge).join("")}</div><h3>${m.name}</h3>
+<div class="nutrition"><div><b>${m.p}</b><span>protein</span></div><div><b>${m.f}</b><span>fiber</span></div><div><b>${m.c}</b><span>carbs</span></div><div><b>${m.fat}</b><span>fat</span></div></div>
+<details><summary>Ingredients</summary><ul>${m.ings.map(x=>{let a=x.split("|");return `<li>${a[0]} — ${a[1]}</li>`}).join("")}</ul></details>
+<details><summary>Prep / instructions</summary><p>${m.prep}</p></details></div>`}
+function render(){
+tabs();let w=state.weeks[state.active], b=w.meals.filter(m=>m.type==="Breakfast"), l=w.meals.filter(m=>m.type==="Lunch"), d=w.meals.filter(m=>m.type==="Dinner");
+document.getElementById("planner").innerHTML=`<div class="week-title"><h2>${w.name}</h2><div class="actions"><button onclick="renameWeek()">Rename</button><button class="danger" onclick="deleteWeek()">Delete</button></div></div>
+<div class="notice"><b>Fuel system:</b> ⚡ Pre-workout = convenient carbs + some protein; 💪 Post-workout = carbs + protein for recovery. These are flexible labels, not rules. Any meal can be eaten when it works for you.</div>
+<h2>Breakfast rotation</h2><div class="grid">${b.map(mealCard).join("")}</div>
+<h2>Lunch rotation</h2><div class="grid">${l.map(mealCard).join("")}</div>
+<h2>Dinner rotation</h2><div>${d.map((m,i)=>`<div class="card day"><span class="tag">Day ${i+1}</span>${mealCard(m,i)}</div>`).join("")}</div>
+<h2>Sunday prep</h2><div class="card"><ol><li>Cook a batch of chicken and/or turkey and a batch of rice or pasta.</li><li>Prep 4–5 breakfasts and lunches in containers.</li><li>Wash and portion fruit and vegetables.</li><li>Keep later-week portions frozen if needed for food safety and freshness.</li></ol></div>
+<div class="actions"><button class="primary" onclick="openLibrary()">Add meals from library</button><button onclick="openGroceries()">Build combined grocery list</button></div>`;
+}
+function selectWeek(i){state.active=i;save();show("planner");render()}
+function newWeek(){let n=state.weeks.length+1;state.weeks.push({name:`Week ${n} — New Rotation`,meals:JSON.parse(JSON.stringify(state.weeks[0].meals))});state.active=state.weeks.length-1;save();render()}
+function renameWeek(){let n=prompt("Name this rotation:",state.weeks[state.active].name);if(n){state.weeks[state.active].name=n;save();render()}}
+function deleteWeek(){if(state.weeks.length===1)return alert("Keep at least one rotation.");if(confirm("Delete this rotation?")){state.weeks.splice(state.active,1);state.active=Math.max(0,state.active-1);save();render()}}
+function show(id){["planner","library","groceries"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id))}
+function openLibrary(){show("library");renderLibrary()}
+function libraryMeals(){return state.weeks.flatMap(w=>w.meals).reduce((a,m)=>{if(!a.some(x=>x.name===m.name))a.push(m);return a},[])}
+function renderLibrary(){
+document.getElementById("library").innerHTML=`<div class="week-title"><h2>Meal Library</h2><button onclick="show('planner')">← Back</button></div>
+<div class="card"><h3>Create your own meal</h3><div class="formgrid"><label>Name<input id="mn"></label><label>Type<select id="mt"><option>Breakfast</option><option>Lunch</option><option>Dinner</option></select></label><label>Protein<input id="mp" placeholder="e.g. 30g"></label><label>Fiber<input id="mf" placeholder="e.g. 8g"></label><label>Carbs<input id="mc" placeholder="e.g. 45g"></label><label>Fat<input id="mfat" placeholder="e.g. 12g"></label></div><label>Fuel labels (comma separated)<input id="mfu" value="Breakfast, Post-workout"></label><label>Ingredients — one per line: ingredient | amount | store<input id="mi" style="min-height:100px"></label><label>Prep instructions<textarea id="mpp"></textarea></label><button class="primary" onclick="addCustomMeal()">Save Meal</button></div>
+<h3>Saved meals</h3><div class="grid">${libraryMeals().map(m=>`<div class="card"><div>${m.fuel.map(fuelBadge).join("")}</div><h3>${m.name}</h3><button onclick="addMealToWeek('${m.name.replace(/'/g,"\\'")}')">＋ Add to ${state.weeks[state.active].name}</button></div>`).join("")}</div>`;
+}
+function addCustomMeal(){
+let m={name:mn.value.trim(),type:mt.value,p:mp.value||"—",f:mf.value||"—",c:mc.value||"—",fat:mfat.value||"—",fuel:mfu.value.split(",").map(x=>x.trim()).filter(Boolean),ings:mi.value.split("\n").filter(Boolean),prep:mpp.value.trim()||"Prep as desired."};
+if(!m.name)return alert("Give the meal a name.");state.weeks[state.active].meals.push(m);save();renderLibrary();alert("Meal added to this rotation.")
+}
+function addMealToWeek(name){let m=libraryMeals().find(x=>x.name===name);if(m){state.weeks[state.active].meals.push(JSON.parse(JSON.stringify(m)));save();render();show("planner")}}
+function openGroceries(){show("groceries");renderGroceries()}
+function renderGroceries(){
+let map={};state.weeks[state.active].meals.forEach(m=>m.ings.forEach(x=>{let a=x.split("|"),k=a[0].trim().toLowerCase(),store=a[2]||"Compare locally";if(!map[k])map[k]={name:a[0],amounts:[],store};map[k].amounts.push(a[1]||"")}));
+let rows=Object.values(map);document.getElementById("groceries").innerHTML=`<div class="week-title"><h2>Combined Grocery List — ${state.weeks[state.active].name}</h2><button onclick="show('planner')">← Back</button></div><div class="card"><p class="small">This combines ingredients across the whole rotation so you can shop once. Store suggestions are planning suggestions, not guaranteed cheapest prices.</p><table><tr><th>Buy</th><th>Ingredient</th><th>Used amounts</th><th>Suggested store</th></tr>${rows.map(r=>`<tr><td><input type="checkbox"></td><td>${r.name}</td><td>${r.amounts.join(" + ")}</td><td>${r.store}</td></tr>`).join("")}</table></div>`}
+function exportData(){let blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="easy-fuel-meal-plans.json";a.click()}
+function importData(e){let file=e.target.files[0];if(!file)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.weeks)throw Error();state=x;state.active=0;save();render();alert("Meal plans imported!")}catch(err){alert("That file isn't a valid Easy Fuel plan.")}};r.readAsText(file)}
+render();
+</script>
+</body></html>
